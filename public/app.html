@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transmisión de Escrutinio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Librería de Iconos FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body {
             background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlyNm5qum7n7DCKWagmAkpSe5LBwmNVPRvl8F6YpiC9WUL-yjgSYO2NaCw&s=10');
@@ -13,6 +15,62 @@
             background-repeat: no-repeat;
             background-attachment: fixed;
             min-height: 100vh;
+        }
+
+        /* Animación de pulso suave para el icono de Voto a Favor */
+        @keyframes latido {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+        }
+        .icono-favor {
+            animation: latido 1.5s infinite ease-in-out;
+        }
+
+        /* Animación de sacudida para el icono de Voto Nulo */
+        @keyframes sacudida {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-15deg); }
+            75% { transform: rotate(15deg); }
+        }
+        .icono-nulo {
+            animation: sacudida 1.8s infinite ease-in-out;
+        }
+
+        /* Animación de rebote vertical para Impugnados */
+        @keyframes rebote {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .icono-impugnado {
+            animation: rebote 1.4s infinite ease-in-out;
+        }
+
+        /* Animación de giro suave para Votos en Blanco */
+        @keyframes flotar {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-3px) scale(1.15); }
+        }
+        .icono-blanco {
+            animation: flotar 2s infinite ease-in-out;
+        }
+
+        /* Animación de despegue para el icono de WhatsApp */
+        @keyframes deslizar {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(5px); }
+        }
+        .icono-enviar {
+            animation: deslizar 1.2s infinite ease-in-out;
+        }
+
+        /* Efecto de salto en el número al sumar */
+        @keyframes saltoNumero {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); color: #0d6efd; }
+            100% { transform: scale(1); }
+        }
+        .numero-animado {
+            animation: saltoNumero 0.25s ease-out;
         }
     </style>
 </head>
@@ -65,34 +123,42 @@
 
             <hr class="my-4">
 
-            <!-- Contadores Interactivos -->
+            <!-- Contadores Interactivos con Iconos Animados -->
             <div class="row text-center mb-4">
                 <div class="col-md-6 mb-3">
                     <div class="p-3 border rounded bg-light">
                         <h5 class="text-success fw-bold">Votos a Favor</h5>
                         <input type="number" id="votos_favor" class="form-control text-center fs-3 fw-bold mb-3" value="0" min="0" readonly>
-                        <button type="button" class="btn btn-success btn-lg w-100" onclick="modificarContador('votos_favor', 1)">+ Voto a Favor</button>
+                        <button type="button" class="btn btn-success btn-lg w-100" onclick="modificarContador('votos_favor', 1)">
+                            <i class="fa-solid fa-circle-check icono-favor me-2"></i> + Voto a Favor
+                        </button>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="p-3 border rounded bg-light">
                         <h5 class="text-danger fw-bold">Votos Nulos</h5>
                         <input type="number" id="votos_nulos" class="form-control text-center fs-3 fw-bold mb-3" value="0" min="0" readonly>
-                        <button type="button" class="btn btn-danger btn-lg w-100" onclick="modificarContador('votos_nulos', 1)">+ Voto Nulo</button>
+                        <button type="button" class="btn btn-danger btn-lg w-100" onclick="modificarContador('votos_nulos', 1)">
+                            <i class="fa-solid fa-circle-xmark icono-nulo me-2"></i> + Voto Nulo
+                        </button>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="p-3 border rounded bg-light">
                         <h5 class="text-warning text-dark fw-bold">Votos Impugnados</h5>
                         <input type="number" id="votos_impugnados" class="form-control text-center fs-3 fw-bold mb-3" value="0" min="0" readonly>
-                        <button type="button" class="btn btn-warning btn-lg w-100 fw-bold" onclick="modificarContador('votos_impugnados', 1)">+ Voto Impugnado</button>
+                        <button type="button" class="btn btn-warning btn-lg w-100 fw-bold" onclick="modificarContador('votos_impugnados', 1)">
+                            <i class="fa-solid fa-triangle-exclamation icono-impugnado me-2"></i> + Voto Impugnado
+                        </button>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="p-3 border rounded bg-light">
                         <h5 class="text-secondary fw-bold">Votos en Blanco</h5>
                         <input type="number" id="votos_blanco" class="form-control text-center fs-3 fw-bold mb-3" value="0" min="0" readonly>
-                        <button type="button" class="btn btn-secondary btn-lg w-100" onclick="modificarContador('votos_blanco', 1)">+ Voto en Blanco</button>
+                        <button type="button" class="btn btn-secondary btn-lg w-100" onclick="modificarContador('votos_blanco', 1)">
+                            <i class="fa-regular fa-file icono-blanco me-2"></i> + Voto en Blanco
+                        </button>
                     </div>
                 </div>
             </div>
@@ -100,13 +166,15 @@
             <!-- Botón de Envío Directo a WhatsApp -->
             <div class="d-grid gap-2">
                 <button type="button" class="btn btn-success btn-lg py-3 fw-bold shadow" onclick="enviarWhatsApp()">
-                    📤 Enviar Reporte por WhatsApp
+                    <i class="fa-brands fa-whatsapp fs-4 me-2"></i> Enviar Reporte por WhatsApp <i class="fa-solid fa-paper-plane icono-enviar ms-2"></i>
                 </button>
             </div>
         </div>
 
         <div class="text-center mt-3 mb-4">
-            <a href="/" class="btn btn-danger btn-sm px-4 shadow-sm">Cerrar Sesión</a>
+            <a href="/" class="btn btn-danger btn-sm px-4 shadow-sm">
+                <i class="fa-solid fa-right-from-bracket me-1"></i> Cerrar Sesión
+            </a>
         </div>
     </div>
 
@@ -124,6 +192,10 @@
             let nuevoValor = valorActual + cambio;
             if (nuevoValor >= 0) {
                 input.value = nuevoValor;
+                // Reiniciar y disparar animación en el número
+                input.classList.remove('numero-animado');
+                void input.offsetWidth; 
+                input.classList.add('numero-animado');
             }
         }
 
@@ -145,7 +217,6 @@
                 return;
             }
 
-            // Guardar respaldo en la Base de Datos a través de la ruta /guardar-reporte
             try {
                 await fetch('/guardar-reporte', {
                     method: 'POST',
