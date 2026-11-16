@@ -16,15 +16,17 @@
                     <p class="text-muted mb-0">Sistema de Control Electoral</p>
                 </div>
                 <div>
-                    <img src="logo_nosotros.jpg" alt="Logo" style="height: 70px;">
+                    <img src="logo_nosotros.jpg" alt="Logo" style="height: 70px;" onerror="this.style.display='none'">
                 </div>
             </div>
         </div>
+
         <div class="card shadow-sm p-4 bg-white">
             <div class="mb-3">
                 <label class="form-label fw-bold">Centro de Votación</label>
                 <input type="text" id="centro_votacion" class="form-control" required placeholder="Ej. Escuela Oficial Urbana...">
             </div>
+
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label fw-bold">Coordinador de Centro</label>
@@ -35,6 +37,7 @@
                     <input type="text" id="nombre_abogado" class="form-control" required>
                 </div>
             </div>
+
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label class="form-label fw-bold">Fiscal Informático</label>
@@ -49,7 +52,9 @@
                     <input type="text" id="numero_mesa" class="form-control" required>
                 </div>
             </div>
+
             <hr class="my-4">
+
             <!-- Contadores Interactivos -->
             <div class="row text-center mb-4">
                 <div class="col-md-6 mb-3">
@@ -66,7 +71,22 @@
                         <button type="button" class="btn btn-danger btn-lg w-100" onclick="modificarContador('votos_nulos', 1)">+ Voto Nulo</button>
                     </div>
                 </div>
+                <div class="col-md-6 mb-3">
+                    <div class="p-3 border rounded bg-light">
+                        <h5 class="text-warning text-dark fw-bold">Votos Impugnados</h5>
+                        <input type="number" id="votos_impugnados" class="form-control text-center fs-3 fw-bold mb-3" value="0" min="0" readonly>
+                        <button type="button" class="btn btn-warning btn-lg w-100 fw-bold" onclick="modificarContador('votos_impugnados', 1)">+ Voto Impugnado</button>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="p-3 border rounded bg-light">
+                        <h5 class="text-secondary fw-bold">Votos en Blanco</h5>
+                        <input type="number" id="votos_blanco" class="form-control text-center fs-3 fw-bold mb-3" value="0" min="0" readonly>
+                        <button type="button" class="btn btn-secondary btn-lg w-100" onclick="modificarContador('votos_blanco', 1)">+ Voto en Blanco</button>
+                    </div>
+                </div>
             </div>
+
             <!-- Botón de Envío Directo a WhatsApp -->
             <div class="d-grid gap-2">
                 <button type="button" class="btn btn-success btn-lg py-3 fw-bold shadow" onclick="enviarWhatsApp()">
@@ -74,11 +94,20 @@
                 </button>
             </div>
         </div>
+
         <div class="text-center mt-3">
             <a href="/" class="text-danger text-decoration-none">Cerrar Sesión</a>
         </div>
     </div>
+
     <script>
+        // Autocompletar datos del usuario si vienen en la URL
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('fiscal')) document.getElementById('nombre_fiscal').value = urlParams.get('fiscal');
+            if (urlParams.has('mesa')) document.getElementById('numero_mesa').value = urlParams.get('mesa');
+        };
+
         function modificarContador(idCampo, cambio) {
             let input = document.getElementById(idCampo);
             let valorActual = parseInt(input.value) || 0;
@@ -87,20 +116,47 @@
                 input.value = nuevoValor;
             }
         }
-        function enviarWhatsApp() {
+
+        async function enviarWhatsApp() {
             let centro = document.getElementById('centro_votacion').value;
             let coordinador = document.getElementById('coordinador_centro').value;
             let abogado = document.getElementById('nombre_abogado').value;
             let informatico = document.getElementById('fiscal_informatico').value;
             let fiscal = document.getElementById('nombre_fiscal').value;
             let mesa = document.getElementById('numero_mesa').value;
-            let favor = document.getElementById('votos_favor').value;
-            let nulos = document.getElementById('votos_nulos').value;
+            
+            let favor = parseInt(document.getElementById('votos_favor').value) || 0;
+            let nulos = parseInt(document.getElementById('votos_nulos').value) || 0;
+            let impugnados = parseInt(document.getElementById('votos_impugnados').value) || 0;
+            let blanco = parseInt(document.getElementById('votos_blanco').value) || 0;
 
-            if(!centro || !mesa || !fiscal) {
+            if (!centro || !mesa || !fiscal) {
                 alert('Por favor completa al menos el Centro de Votación, Número de Mesa y Nombre del Fiscal.');
                 return;
             }
+
+            // Guardar respaldo en la Base de Datos a través de la ruta /guardar-reporte
+            try {
+                await fetch('/guardar-reporte', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        centro_votacion: centro,
+                        coordinador_centro: coordinador,
+                        nombre_abogado: abogado,
+                        fiscal_informatico: informatico,
+                        nombre_fiscal: fiscal,
+                        numero_mesa: mesa,
+                        votos_favor: favor,
+                        votos_nulos: nulos,
+                        votos_impugnados: impugnados,
+                        votos_blanco: blanco
+                    })
+                });
+            } catch (e) {
+                console.error("Error guardando respaldo:", e);
+            }
+
             let texto = `📊 *REPORTE OFICIAL DE MESA* 📊\n\n` +
                         `🏢 *Centro:* ${centro}\n` +
                         `🔢 *Mesa:* ${mesa}\n` +
@@ -109,7 +165,9 @@
                         `💻 *Informático:* ${informatico}\n` +
                         `📋 *Coordinador:* ${coordinador}\n\n` +
                         `✅ *Votos a Favor:* ${favor}\n` +
-                        `❌ *Votos Nulos:* ${nulos}`;
+                        `❌ *Votos Nulos:* ${nulos}\n` +
+                        `⚠️ *Votos Impugnados:* ${impugnados}\n` +
+                        `⬜ *Votos en Blanco:* ${blanco}`;
 
             let telefono = "50241714540";
             let url = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(texto)}`;
