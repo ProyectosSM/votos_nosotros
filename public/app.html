@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transmisión de Escrutinio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Librería de Iconos FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body {
@@ -17,61 +16,43 @@
             min-height: 100vh;
         }
 
-        /* Animación de pulso suave para el icono de Voto a Favor */
         @keyframes latido {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.25); }
         }
-        .icono-favor {
-            animation: latido 1.5s infinite ease-in-out;
-        }
+        .icono-favor { animation: latido 1.5s infinite ease-in-out; }
 
-        /* Animación de sacudida para el icono de Voto Nulo */
         @keyframes sacudida {
             0%, 100% { transform: rotate(0deg); }
             25% { transform: rotate(-15deg); }
             75% { transform: rotate(15deg); }
         }
-        .icono-nulo {
-            animation: sacudida 1.8s infinite ease-in-out;
-        }
+        .icono-nulo { animation: sacudida 1.8s infinite ease-in-out; }
 
-        /* Animación de rebote vertical para Impugnados */
         @keyframes rebote {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
         }
-        .icono-impugnado {
-            animation: rebote 1.4s infinite ease-in-out;
-        }
+        .icono-impugnado { animation: rebote 1.4s infinite ease-in-out; }
 
-        /* Animación de giro suave para Votos en Blanco */
         @keyframes flotar {
             0%, 100% { transform: translateY(0) scale(1); }
             50% { transform: translateY(-3px) scale(1.15); }
         }
-        .icono-blanco {
-            animation: flotar 2s infinite ease-in-out;
-        }
+        .icono-blanco { animation: flotar 2s infinite ease-in-out; }
 
-        /* Animación de despegue para el icono de WhatsApp */
         @keyframes deslizar {
             0%, 100% { transform: translateX(0); }
             50% { transform: translateX(5px); }
         }
-        .icono-enviar {
-            animation: deslizar 1.2s infinite ease-in-out;
-        }
+        .icono-enviar { animation: deslizar 1.2s infinite ease-in-out; }
 
-        /* Efecto de salto en el número al sumar */
         @keyframes saltoNumero {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); color: #0d6efd; }
             100% { transform: scale(1); }
         }
-        .numero-animado {
-            animation: saltoNumero 0.25s ease-out;
-        }
+        .numero-animado { animation: saltoNumero 0.25s ease-out; }
     </style>
 </head>
 <body>
@@ -124,7 +105,7 @@
             <hr class="my-4">
 
             <!-- Contadores Interactivos con Iconos Animados -->
-            <div class="row text-center mb-4">
+            <div class="row text-center mb-3">
                 <div class="col-md-6 mb-3">
                     <div class="p-3 border rounded bg-light">
                         <h5 class="text-success fw-bold">Votos a Favor</h5>
@@ -163,9 +144,33 @@
                 </div>
             </div>
 
+            <!-- Sección para Tomar Fotografía del Acta -->
+            <div class="p-3 border rounded bg-light text-center mb-4">
+                <h5 class="fw-bold text-primary mb-2">
+                    <i class="fa-solid fa-camera me-2"></i>Fotografía del Acta / Evidencia
+                </h5>
+                <p class="text-muted small mb-3">Toma una foto clara del documento antes de enviar el reporte</p>
+                
+                <input type="file" id="inputFoto" accept="image/*" capture="environment" class="d-none" onchange="procesarFoto(event)">
+                
+                <button type="button" class="btn btn-outline-primary btn-lg w-100 fw-bold" onclick="document.getElementById('inputFoto').click()">
+                    <i class="fa-solid fa-camera-retro me-2"></i> Tomar / Seleccionar Foto
+                </button>
+
+                <!-- Vista Previa de la Foto -->
+                <div id="contenedorPreview" class="mt-3" style="display: none;">
+                    <img id="imgPreview" src="" alt="Vista previa" class="img-fluid rounded border shadow-sm mb-2" style="max-height: 250px;">
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFoto()">
+                            <i class="fa-solid fa-trash me-1"></i> Quitar foto
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Botón de Envío Directo a WhatsApp -->
             <div class="d-grid gap-2">
-                <button type="button" class="btn btn-success btn-lg py-3 fw-bold shadow" onclick="enviarWhatsApp()">
+                <button type="button" id="btnEnviar" class="btn btn-success btn-lg py-3 fw-bold shadow" onclick="enviarWhatsApp()">
                     <i class="fa-brands fa-whatsapp fs-4 me-2"></i> Enviar Reporte por WhatsApp <i class="fa-solid fa-paper-plane icono-enviar ms-2"></i>
                 </button>
             </div>
@@ -179,7 +184,8 @@
     </div>
 
     <script>
-        // Autocompletar datos del usuario si vienen en la URL
+        let fotoBase64 = "";
+
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('fiscal')) document.getElementById('nombre_fiscal').value = urlParams.get('fiscal');
@@ -192,11 +198,50 @@
             let nuevoValor = valorActual + cambio;
             if (nuevoValor >= 0) {
                 input.value = nuevoValor;
-                // Reiniciar y disparar animación en el número
                 input.classList.remove('numero-animado');
                 void input.offsetWidth; 
                 input.classList.add('numero-animado');
             }
+        }
+
+        // Comprimir y mostrar vista previa de la foto tomada
+        function procesarFoto(event) {
+            const archivo = event.target.files[0];
+            if (!archivo) return;
+
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_ANCHO = 800; // Redimensionar para envío rápido
+                    let ancho = img.width;
+                    let alto = img.height;
+
+                    if (ancho > MAX_ANCHO) {
+                        alto *= MAX_ANCHO / ancho;
+                        ancho = MAX_ANCHO;
+                    }
+
+                    canvas.width = ancho;
+                    canvas.height = alto;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, ancho, alto);
+
+                    // Convertir a JPEG comprimido (calidad 70%)
+                    fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    document.getElementById('imgPreview').src = fotoBase64;
+                    document.getElementById('contenedorPreview').style.display = 'block';
+                };
+                img.src = e.target.result;
+            };
+            lector.readAsDataURL(archivo);
+        }
+
+        function eliminarFoto() {
+            fotoBase64 = "";
+            document.getElementById('inputFoto').value = "";
+            document.getElementById('contenedorPreview').style.display = 'none';
         }
 
         async function enviarWhatsApp() {
@@ -217,6 +262,10 @@
                 return;
             }
 
+            const btn = document.getElementById('btnEnviar');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Guardando reporte y foto...';
+
             try {
                 await fetch('/guardar-reporte', {
                     method: 'POST',
@@ -231,12 +280,18 @@
                         votos_favor: favor,
                         votos_nulos: nulos,
                         votos_impugnados: impugnados,
-                        votos_blanco: blanco
+                        votos_blanco: blanco,
+                        foto_acta: fotoBase64 || null
                     })
                 });
             } catch (e) {
                 console.error("Error guardando respaldo:", e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-brands fa-whatsapp fs-4 me-2"></i> Enviar Reporte por WhatsApp <i class="fa-solid fa-paper-plane icono-enviar ms-2"></i>';
             }
+
+            let estadoFoto = fotoBase64 ? "📸 *Foto del acta:* Adjunta en sistema" : "⚠️ *Foto del acta:* No adjuntada";
 
             let texto = `📊 *REPORTE OFICIAL DE MESA* 📊\n\n` +
                         `🏢 *Centro:* ${centro}\n` +
@@ -248,7 +303,8 @@
                         `✅ *Votos a Favor:* ${favor}\n` +
                         `❌ *Votos Nulos:* ${nulos}\n` +
                         `⚠️ *Votos Impugnados:* ${impugnados}\n` +
-                        `⬜ *Votos en Blanco:* ${blanco}`;
+                        `⬜ *Votos en Blanco:* ${blanco}\n\n` +
+                        `${estadoFoto}`;
 
             let telefono = "50241714540";
             let url = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(texto)}`;
