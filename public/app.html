@@ -257,63 +257,58 @@
         }
 
         async function verificarClaveAdmin() {
-            const claveIngresada = document.getElementById('inputClaveAdmin').value.trim();
-            const errorMsg = document.getElementById('errorClaveAdmin');
-            const btnConfirmar = document.getElementById('btnConfirmarAdmin');
+    const claveIngresada = document.getElementById('inputClaveAdmin').value.trim();
+    const errorMsg = document.getElementById('errorClaveAdmin');
+    const btnConfirmar = document.getElementById('btnConfirmarAdmin');
 
-            if (!claveIngresada) return;
+    if (!claveIngresada) return;
 
-            btnConfirmar.disabled = true;
-            btnConfirmar.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Verificando...';
-            errorMsg.style.display = "none";
+    btnConfirmar.disabled = true;
+    btnConfirmar.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Verificando...';
+    errorMsg.style.display = "none";
 
-            try {
-                // Consulta directa a Supabase sin pasar por rutas de servidor
-                const { data, error } = await supabaseClient
-                    .from('usuarios')
-                    .select('usuario, password, rol');
+    try {
+        // Consulta directa exactamente igual que en login.html
+        const { data, error } = await supabaseClient
+            .from('usuarios')
+            .select('id, usuario, rol')
+            .eq('password', claveIngresada)
+            .ilike('rol', '%admin%')
+            .limit(1);
 
-                if (error) {
-                    throw new Error(error.message);
-                }
-
-                // Verifica si algún usuario con rol admin (o usuario admin) tiene esa contraseña
-                const esAdminValido = (data || []).some(u => {
-                    const rol = (u.rol || '').trim().toLowerCase();
-                    const user = (u.usuario || '').trim().toLowerCase();
-                    const pass = (u.password || '').trim();
-                    return (rol === 'admin' || user === 'admin') && pass === claveIngresada;
-                });
-
-                if (esAdminValido) {
-                    const campoManual = document.getElementById('votos_manuales');
-                    campoManual.disabled = false;
-                    campoManual.classList.add('border-success', 'border-2');
-                    
-                    const badge = document.getElementById('badgeEstadoManual');
-                    badge.className = 'badge bg-success';
-                    badge.innerHTML = '<i class="fa-solid fa-unlock me-1"></i> Habilitado';
-
-                    const btnHabilitar = document.getElementById('btnHabilitarManual');
-                    btnHabilitar.className = 'btn btn-outline-success btn-sm w-100 fw-bold';
-                    btnHabilitar.disabled = true;
-                    btnHabilitar.innerHTML = '<i class="fa-solid fa-check-circle me-1"></i> Ingreso Manual Autorizado';
-
-                    modalAdminInstance.hide();
-                    campoManual.focus();
-                    campoManual.select();
-                } else {
-                    errorMsg.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Contraseña de administrador incorrecta.';
-                    errorMsg.style.display = "block";
-                }
-            } catch (err) {
-                errorMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i> Error BD: ${err.message}`;
-                errorMsg.style.display = "block";
-            } finally {
-                btnConfirmar.disabled = false;
-                btnConfirmar.innerHTML = '<i class="fa-solid fa-unlock me-1"></i> Habilitar Campo';
-            }
+        if (error) {
+            throw new Error(error.message);
         }
+
+        if (data && data.length > 0) {
+            const campoManual = document.getElementById('votos_manuales');
+            campoManual.disabled = false;
+            campoManual.classList.add('border-success', 'border-2');
+            
+            const badge = document.getElementById('badgeEstadoManual');
+            badge.className = 'badge bg-success';
+            badge.innerHTML = '<i class="fa-solid fa-unlock me-1"></i> Habilitado';
+
+            const btnHabilitar = document.getElementById('btnHabilitarManual');
+            btnHabilitar.className = 'btn btn-outline-success btn-sm w-100 fw-bold';
+            btnHabilitar.disabled = true;
+            btnHabilitar.innerHTML = '<i class="fa-solid fa-check-circle me-1"></i> Ingreso Manual Autorizado';
+
+            modalAdminInstance.hide();
+            campoManual.focus();
+            campoManual.select();
+        } else {
+            errorMsg.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Contraseña incorrecta para rol Administrador.';
+            errorMsg.style.display = "block";
+        }
+    } catch (err) {
+        errorMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i> Error: ${err.message}`;
+        errorMsg.style.display = "block";
+    } finally {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = '<i class="fa-solid fa-unlock me-1"></i> Habilitar Campo';
+    }
+}
 
         function modificarContador(idCampo, cambio) {
             let input = document.getElementById(idCampo);
