@@ -28,3 +28,24 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
 });
+
+// 6. Validar contraseña de administrador para habilitar Votos Manuales
+app.post('/api/validar-admin', async (req, res) => {
+    try {
+        const { password } = req.body;
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('id')
+            .eq('rol', 'admin')
+            .eq('password', password)
+            .limit(1);
+
+        if (error || !data || data.length === 0) {
+            return res.status(401).json({ ok: false });
+        }
+
+        res.json({ ok: true });
+    } catch (err) {
+        res.status(500).json({ ok: false, error: err.message });
+    }
+});
