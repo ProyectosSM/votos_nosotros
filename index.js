@@ -32,15 +32,21 @@ app.listen(PORT, () => {
 // 6. Validar contraseña de administrador para habilitar Votos Manuales
 app.post('/api/validar-admin', async (req, res) => {
     try {
-        const { password } = req.body;
+        const claveIngresada = (req.body.password || '').trim();
+
         const { data, error } = await supabase
             .from('usuarios')
-            .select('id')
-            .eq('rol', 'admin')
-            .eq('password', password)
-            .limit(1);
+            .select('password, rol');
 
-        if (error || !data || data.length === 0) {
+        if (error) return res.status(500).json({ ok: false, error: error.message });
+
+        // Busca cualquier usuario con rol 'admin' (sin importar mayúsculas) cuya clave coincida
+        const esValida = data.some(u => 
+            (u.rol || '').trim().toLowerCase() === 'admin' && 
+            (u.password || '').trim() === claveIngresada
+        );
+
+        if (!esValida) {
             return res.status(401).json({ ok: false });
         }
 
