@@ -41,6 +41,12 @@
         }
         .icono-blanco { animation: flotar 2s infinite ease-in-out; }
 
+        @keyframes pulsoManual {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.18); }
+        }
+        .icono-manual { animation: pulsoManual 1.6s infinite ease-in-out; }
+
         @keyframes deslizar {
             0%, 100% { transform: translateX(0); }
             50% { transform: translateX(5px); }
@@ -142,6 +148,22 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Sección Votos Manuales (Bloqueada hasta ingresar clave de Admin) -->
+                <div class="col-12 mb-3">
+                    <div class="p-3 border border-primary rounded bg-light">
+                        <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+                            <h5 class="text-primary fw-bold mb-0">Votos Manuales</h5>
+                            <span id="badgeEstadoManual" class="badge bg-secondary">
+                                <i class="fa-solid fa-lock me-1"></i> Bloqueado
+                            </span>
+                        </div>
+                        <input type="number" id="votos_manuales" class="form-control text-center fs-3 fw-bold mb-3 bg-white" value="0" min="0" disabled>
+                        <button type="button" id="btnHabilitarManual" class="btn btn-primary btn-lg w-100 fw-bold" onclick="abrirModalAdmin()">
+                            <i class="fa-solid fa-key icono-manual me-2"></i> Votos Manuales (Requiere Admin)
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Sección para Tomar Fotografía del Acta -->
@@ -157,7 +179,6 @@
                     <i class="fa-solid fa-camera-retro me-2"></i> Tomar / Seleccionar Foto
                 </button>
 
-                <!-- Vista Previa de la Foto -->
                 <div id="contenedorPreview" class="mt-3" style="display: none;">
                     <img id="imgPreview" src="" alt="Vista previa" class="img-fluid rounded border shadow-sm mb-2" style="max-height: 250px;">
                     <div>
@@ -183,14 +204,99 @@
         </div>
     </div>
 
+    <!-- Modal de Autorización de Administrador -->
+    <div class="modal fade" id="modalAdmin" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-shield-halved me-2"></i>Autorización de Administrador
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Ingresa la contraseña de administrador para habilitar el ingreso manual de votos.</p>
+                    <input type="password" id="inputClaveAdmin" class="form-control form-control-lg" placeholder="Contraseña de administrador" onkeydown="if(event.key==='Enter') verificarClaveAdmin()">
+                    <div id="errorClaveAdmin" class="text-danger small fw-bold mt-2" style="display: none;">
+                        <i class="fa-solid fa-circle-exclamation me-1"></i> Contraseña incorrecta. Intenta de nuevo.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnConfirmarAdmin" class="btn btn-primary fw-bold" onclick="verificarClaveAdmin()">
+                        <i class="fa-solid fa-unlock me-1"></i> Habilitar Campo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (necesario para el Modal) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let fotoBase64 = "";
+        let modalAdminInstance = null;
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('fiscal')) document.getElementById('nombre_fiscal').value = urlParams.get('fiscal');
             if (urlParams.has('mesa')) document.getElementById('numero_mesa').value = urlParams.get('mesa');
+            modalAdminInstance = new bootstrap.Modal(document.getElementById('modalAdmin'));
         };
+
+        function abrirModalAdmin() {
+            document.getElementById('inputClaveAdmin').value = "";
+            document.getElementById('errorClaveAdmin').style.display = "none";
+            modalAdminInstance.show();
+            setTimeout(() => document.getElementById('inputClaveAdmin').focus(), 400);
+        }
+
+        async function verificarClaveAdmin() {
+            const password = document.getElementById('inputClaveAdmin').value;
+            const errorMsg = document.getElementById('errorClaveAdmin');
+            const btnConfirmar = document.getElementById('btnConfirmarAdmin');
+
+            if (!password) return;
+
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Verificando...';
+
+            try {
+                const res = await fetch('/api/validar-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+
+                if (data.ok) {
+                    const campoManual = document.getElementById('votos_manuales');
+                    campoManual.disabled = false;
+                    campoManual.classList.add('border-success', 'border-2');
+                    
+                    const badge = document.getElementById('badgeEstadoManual');
+                    badge.className = 'badge bg-success';
+                    badge.innerHTML = '<i class="fa-solid fa-unlock me-1"></i> Habilitado';
+
+                    const btnHabilitar = document.getElementById('btnHabilitarManual');
+                    btnHabilitar.className = 'btn btn-outline-success btn-sm w-100 fw-bold';
+                    btnHabilitar.disabled = true;
+                    btnHabilitar.innerHTML = '<i class="fa-solid fa-check-circle me-1"></i> Ingreso Manual Autorizado';
+
+                    modalAdminInstance.hide();
+                    campoManual.focus();
+                    campoManual.select();
+                } else {
+                    errorMsg.style.display = "block";
+                }
+            } catch (e) {
+                errorMsg.textContent = "Error de conexión al validar la contraseña.";
+                errorMsg.style.display = "block";
+            } finally {
+                btnConfirmar.disabled = false;
+                btnConfirmar.innerHTML = '<i class="fa-solid fa-unlock me-1"></i> Habilitar Campo';
+            }
+        }
 
         function modificarContador(idCampo, cambio) {
             let input = document.getElementById(idCampo);
@@ -204,7 +310,6 @@
             }
         }
 
-        // Comprimir y mostrar vista previa de la foto tomada
         function procesarFoto(event) {
             const archivo = event.target.files[0];
             if (!archivo) return;
@@ -214,7 +319,7 @@
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const MAX_ANCHO = 800; // Redimensionar para envío rápido
+                    const MAX_ANCHO = 800;
                     let ancho = img.width;
                     let alto = img.height;
 
@@ -228,7 +333,6 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, ancho, alto);
 
-                    // Convertir a JPEG comprimido (calidad 70%)
                     fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
                     document.getElementById('imgPreview').src = fotoBase64;
                     document.getElementById('contenedorPreview').style.display = 'block';
@@ -256,6 +360,7 @@
             let nulos = parseInt(document.getElementById('votos_nulos').value) || 0;
             let impugnados = parseInt(document.getElementById('votos_impugnados').value) || 0;
             let blanco = parseInt(document.getElementById('votos_blanco').value) || 0;
+            let manuales = parseInt(document.getElementById('votos_manuales').value) || 0;
 
             if (!centro || !mesa || !fiscal) {
                 alert('Por favor completa al menos el Centro de Votación, Número de Mesa y Nombre del Fiscal.');
@@ -264,7 +369,7 @@
 
             const btn = document.getElementById('btnEnviar');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Guardando reporte y foto...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Guardando reporte...';
 
             try {
                 await fetch('/guardar-reporte', {
@@ -281,6 +386,7 @@
                         votos_nulos: nulos,
                         votos_impugnados: impugnados,
                         votos_blanco: blanco,
+                        votos_manuales: manuales,
                         foto_acta: fotoBase64 || null
                     })
                 });
@@ -303,7 +409,8 @@
                         `✅ *Votos a Favor:* ${favor}\n` +
                         `❌ *Votos Nulos:* ${nulos}\n` +
                         `⚠️ *Votos Impugnados:* ${impugnados}\n` +
-                        `⬜ *Votos en Blanco:* ${blanco}\n\n` +
+                        `⬜ *Votos en Blanco:* ${blanco}\n` +
+                        `✍️ *Votos Manuales:* ${manuales}\n\n` +
                         `${estadoFoto}`;
 
             let telefono = "50241714540";
